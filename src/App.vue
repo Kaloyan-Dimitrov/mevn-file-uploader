@@ -1,16 +1,19 @@
 <template>
   <div id="app">
     <file-uploader></file-uploader>
+    <file-list></file-list>
   </div>
 </template>
 
 <script>
+import FileList from './components/FileList.vue';
 import FileUploader from './components/FileUploader.vue';
 
 export default {
   name: "App",
   components: {
-    FileUploader
+    FileUploader,
+    FileList
   }
 };
 </script>

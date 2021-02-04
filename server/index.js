@@ -79,4 +79,25 @@ app.get('/all-files', (req, res) => {
     });
 });
 
+app.get("/download/:filename", (req, res) => {
+    const file = gfs
+        .find({
+            filename: typeof req.params.filename === 'string' ? req.params.filename : ''
+        })
+        .toArray((err, files) => {
+            if (err) return res.status(400).send(err);
+            if (!files || files.length === 0) {
+                return res.status(404).json({
+                    err: "no files exist"
+                });
+            }
+            const file = files[0];
+            res.set('Content-Type', file.contentType);
+            res.set('Content-Disposition', 'attachment;');
+
+            gfs.openDownloadStreamByName(req.params.filename).pipe(res)
+        });
+});
+
+
 app.listen(port, () => console.log(`Example app listening on ${port} port!`))
