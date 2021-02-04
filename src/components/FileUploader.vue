@@ -5,7 +5,6 @@
         <b-form-group label-size="lg">
           <b-form-file
             v-model="files"
-            ref="files"
             multiple
             id="file-large"
             size="lg"
@@ -16,7 +15,7 @@
         <b-button type="submit" variant="primary">Submit</b-button>
       </div>
     </form>
-    <b-alert>{{ message }}</b-alert>
+    <b-alert>{{ JSON.stringify(this.message) }}</b-alert>
   </div>
 </template>
 
@@ -31,17 +30,15 @@ export default {
   },
   methods: {
     async onSubmit() {
-      console.log("here");
       const formData = new FormData();
-      formData.append("files", this.files);
-      console.log(formData);
-      console.log(new FormData());
-      let response = await fetch("/upload", {
+      for (let file of this.files) formData.append("file", file);
+      console.log(formData.getAll('file'))
+      let response = await fetch("http://localhost:8081/upload", {
         method: "POST",
         body: formData
       });
-      console.log(await response.json())
       let result = await response.json();
+      console.log(result);
       this.message = result;
     }
   }
