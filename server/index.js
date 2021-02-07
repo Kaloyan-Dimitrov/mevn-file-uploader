@@ -2,9 +2,12 @@ const express = require('express');
 const cors = require('cors');
 const multer = require('multer');
 const crypto = require('crypto');
-const path = require('path');
 const mongoose = require('mongoose');
 const GridFsStorage = require('multer-gridfs-storage');
+const MongoClient = require('mongodb').MongoClient;
+const bcrypt = require('bcrypt');
+const saltRounds = 10;
+let db = undefined;
 
 const app = express();
 app.use(cors());
@@ -15,6 +18,11 @@ const conn = mongoose.createConnection(mongoURI, {
     useNewUrlParser: true,
     useUnifiedTopology: true
 });
+MongoClient.connect(mongoURI, (err, d) => {
+    if (err) throw err;
+    else db = d.db();
+    console.log('Connected to the database');
+})
 let gfs;
 conn.once("open", () => {
     gfs = new mongoose.mongo.GridFSBucket(conn.db, {
@@ -47,10 +55,56 @@ const upload = multer({
 const port = 8081 || process.env.PORT;
 
 app.post('/upload', upload.array('file'), (req, res) => {
-    console.log('recieved files');
-    console.log(req.files)
-    res.json({ files: req.files });
-})
+    res.json({
+        files: req.files
+    });
+});
+
+app.post('/signup', multer().none(), async (req, res) => {
+    const resp = await db.collection('users').findOne({
+        email: req.body.email
+    });
+    if (resp) {
+        res.send({
+            err: 'A user with this email already exists.'
+        });
+        return;
+    }
+    const hash = await bcrypt.hash(req.body.password, saltRounds);
+    const newUser = {
+        name: req.body.name,
+        email: req.body.email,
+        hash_password: hash,
+    };
+    try {
+        const resp = await db.collection('users').insertOne(newUser);
+        res.send(resp);
+    } catch (err) {
+        throw err;
+    }
+});
+
+app.post('/login', multer().none(), async (req, res) => {
+    const resp = await db.collection('users').findOne({
+        email: req.body.email
+    });
+    if (resp) {
+        const rightPass = await bcrypt.compare(req.body.password, resp.hash_password);
+        if (rightPass) res.send({
+            _id: resp._id,
+            name: resp.name,
+            email: resp.email
+        });
+        else res.send({
+            err: 'Incorrect password.'
+        });
+    } else {
+        res.send({
+            err: 'There aren\'t any users, registered with the given information.'
+        });
+    }
+});
+
 
 app.get('/all-files', (req, res) => {
     gfs.find().toArray((err, files) => {

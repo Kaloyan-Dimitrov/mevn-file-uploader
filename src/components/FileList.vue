@@ -1,5 +1,5 @@
 <template>
-  <b-container class="mt-3">
+  <div class="mt-3 overflow-auto">
     <b-card-header>My Files: </b-card-header>
     <b-list-group>
       <b-link
@@ -9,7 +9,7 @@
         ><b-list-group-item>{{ f.filename }}</b-list-group-item></b-link
       >
     </b-list-group>
-  </b-container>
+  </div>
 </template>
 
 <script>

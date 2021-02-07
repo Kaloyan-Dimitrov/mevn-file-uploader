@@ -1,7 +1,7 @@
 <template>
   <div class="file">
     <form enctype="multipart/form-data" @submit.prevent="onSubmit">
-      <div class="container">
+      <div class="">
         <b-form-group label-size="lg">
           <b-form-file
             v-model="files"
@@ -11,8 +11,8 @@
           ></b-form-file>
         </b-form-group>
       </div>
-      <div class="fields">
-        <b-button type="submit" variant="primary">Submit</b-button>
+      <div class="fields float-right">
+        <b-button type="submit" variant="primary">Upload</b-button>
       </div>
     </form>
     <b-alert>{{ JSON.stringify(this.message) }}</b-alert>
@@ -32,7 +32,6 @@ export default {
     async onSubmit() {
       const formData = new FormData();
       for (let file of this.files) formData.append("file", file);
-      console.log(formData.getAll('file'))
       let response = await fetch("http://localhost:8081/upload", {
         method: "POST",
         body: formData

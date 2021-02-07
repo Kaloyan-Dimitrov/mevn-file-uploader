@@ -1,7 +1,17 @@
 <template>
   <div class="vue-tempalte">
-    <form @submit.prevent="login()">
-      <h3>Sign In</h3>
+    <form @submit.prevent="register()">
+      <h3>Sign Up</h3>
+
+      <div class="form-group">
+        <label>Full Name</label>
+        <input
+          required
+          type="text"
+          class="form-control form-control-lg"
+          v-model="fname"
+        />
+      </div>
 
       <div class="form-group">
         <label>Email address</label>
@@ -24,8 +34,13 @@
       </div>
 
       <button type="submit" class="btn btn-dark btn-lg btn-block">
-        Sign In
+        Sign Up
       </button>
+
+      <p class="forgot-password text-right">
+        Already registered
+        <router-link :to="{ name: 'login' }">sign in?</router-link>
+      </p>
     </form>
   </div>
 </template>
@@ -34,16 +49,18 @@
 export default {
   data() {
     return {
+      fname: "",
       email: "",
       password: ""
     };
   },
   methods: {
-    async login() {
+    async register() {
       const fd = new FormData();
+      fd.append("name", this.fname);
       fd.append("email", this.email);
       fd.append("password", this.password);
-      let response = await fetch("http://localhost:8081/login", {
+      let response = await fetch("http://localhost:8081/signup", {
         method: "POST",
         body: fd
       });
@@ -56,9 +73,6 @@ export default {
           variant: "danger",
           solid: true
         });
-      } else {
-        localStorage.setItem("userId", result._id);
-        window.location.href = "/";
       }
     }
   }
