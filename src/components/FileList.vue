@@ -15,13 +15,14 @@
 <script>
 export default {
   async mounted() {
-    let res = await fetch("http://localhost:8081/all-files");
+    let res = await fetch(`http://localhost:8081/all-files/${this.userId}`);
     this.files = await res.json();
     this.files = this.files.files;
   },
   data() {
     return {
-      files: []
+      files: [],
+      userId: localStorage.getItem("userId")
     };
   }
 };

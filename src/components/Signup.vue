@@ -73,6 +73,9 @@ export default {
           variant: "danger",
           solid: true
         });
+      } else {
+        localStorage.setItem("userId", result._id);
+        window.location.href = "/";
       }
     }
   }

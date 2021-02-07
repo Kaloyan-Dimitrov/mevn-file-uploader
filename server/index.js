@@ -6,6 +6,10 @@ const mongoose = require('mongoose');
 const GridFsStorage = require('multer-gridfs-storage');
 const MongoClient = require('mongodb').MongoClient;
 const bcrypt = require('bcrypt');
+const {
+    ObjectId,
+    ObjectID
+} = require('mongodb');
 const saltRounds = 10;
 let db = undefined;
 
@@ -32,19 +36,12 @@ conn.once("open", () => {
 const storage = new GridFsStorage({
     url: mongoURI,
     file: (req, file) => {
-        return new Promise((resolve, reject) => {
-            crypto.randomBytes(16, (err, buf) => {
-                if (err) {
-                    return reject(err);
-                }
-                const filename = file.originalname;
-                const fileInfo = {
-                    filename: filename,
-                    bucketName: "uploads"
-                };
-                resolve(fileInfo);
-            });
-        });
+        const filename = file.originalname;
+        const fileInfo = {
+            filename: filename,
+            bucketName: "uploads"
+        };
+        return fileInfo;
     }
 });
 const upload = multer({
@@ -55,6 +52,15 @@ const upload = multer({
 const port = 8081 || process.env.PORT;
 
 app.post('/upload', upload.array('file'), (req, res) => {
+    db.collection('users').updateOne({
+        '_id': ObjectId(req.body.userId)
+    }, {
+        $push: {
+            files: {
+                $each: req.files.map(i => i.id)
+            }
+        }
+    });
     res.json({
         files: req.files
     });
@@ -75,6 +81,7 @@ app.post('/signup', multer().none(), async (req, res) => {
         name: req.body.name,
         email: req.body.email,
         hash_password: hash,
+        files: []
     };
     try {
         const resp = await db.collection('users').insertOne(newUser);
@@ -106,8 +113,15 @@ app.post('/login', multer().none(), async (req, res) => {
 });
 
 
-app.get('/all-files', (req, res) => {
-    gfs.find().toArray((err, files) => {
+app.get('/all-files/:userId', async (req, res) => {
+    const user = await db.collection('users').findOne({
+        _id: ObjectId(req.params.userId)
+    });
+    gfs.find({
+        '_id': {
+            $in: user.files
+        }
+    }).toArray((err, files) => {
         // check if files
         if (!files) {
             return res.json({

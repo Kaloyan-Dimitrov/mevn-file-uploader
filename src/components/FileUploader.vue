@@ -32,6 +32,7 @@ export default {
     async onSubmit() {
       const formData = new FormData();
       for (let file of this.files) formData.append("file", file);
+      formData.append("userId", localStorage.getItem("userId"));
       let response = await fetch("http://localhost:8081/upload", {
         method: "POST",
         body: formData
@@ -39,6 +40,7 @@ export default {
       let result = await response.json();
       console.log(result);
       this.message = result;
+      window.location.reload();
     }
   }
 };
