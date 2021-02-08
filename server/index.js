@@ -147,6 +147,52 @@ app.get('/all-files/:userId', async (req, res) => {
     });
 });
 
+app.get('/all-shared-files/:userId', async (req, res) => {
+    const user = await db.collection('users').findOne({
+        _id: ObjectId(req.params.userId)
+    });
+    gfs.find({
+        '_id': {
+            $in: user.shared_files.map(i => i._id)
+        }
+    }).toArray((err, files) => {
+        // check if files
+        if (!files) {
+            return res.json({
+                files: null
+            });
+        } else {
+            const f = files
+                .map(file => ({
+                    ...file,
+                    "isImage": new RegExp("image/(png|jpeg)").test(file.contentType),
+                    "userId": user.shared_files.filter(i => i._id.toString() == file._id.toString())[0].userId
+                }))
+                .sort((a, b) => {
+                    return (
+                        new Date(b["uploadDate"]).getTime() -
+                        new Date(a["uploadDate"]).getTime()
+                    );
+                });
+
+            return res.json({
+                files: f
+            });
+        }
+    });
+});
+
+app.get('/all-users', async (req, res) => {
+    let users = await db.collection('users').find().toArray();
+    users = users.map(i => ({
+        email: i.email,
+        _id: i._id
+    }));
+    res.json({
+        users: users
+    });
+});
+
 app.get("/download/:fileid/:filename", (req, res) => {
     const file = gfs
         .find({
@@ -178,6 +224,42 @@ app.get("/delete/:userid/:fileid", async (req, res) => {
                 files: ObjectId(req.params.fileid)
             }
         });
+    } catch (err) {
+        throw err;
+    }
+    res.redirect('back');
+});
+
+app.get("/delete-shared/:userid/:fileid", async (req, res) => {
+    try {
+        await db.collection('users').updateOne({
+            '_id': ObjectId(req.params.userid)
+        }, {
+            $pull: {
+                shared_files: {
+                    _id: ObjectId(req.params.fileid)
+                }
+            }
+        });
+    } catch (err) {
+        throw err;
+    }
+    res.redirect('back');
+});
+
+app.get("/share/:currentuserid/:userid/:fileid", async (req, res) => {
+    try {
+        await db.collection('users').updateOne({
+            '_id': ObjectId(req.params.userid)
+        }, {
+            $addToSet: {
+                shared_files: {
+                    _id: ObjectId(req.params.fileid),
+                    userId: req.params.currentuserid
+                }
+            }
+        });
+
     } catch (err) {
         throw err;
     }
