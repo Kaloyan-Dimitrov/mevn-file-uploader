@@ -147,10 +147,10 @@ app.get('/all-files/:userId', async (req, res) => {
     });
 });
 
-app.get("/download/:filename", (req, res) => {
+app.get("/download/:fileid/:filename", (req, res) => {
     const file = gfs
         .find({
-            filename: typeof req.params.filename === 'string' ? req.params.filename : ''
+            '_id': ObjectId(req.params.fileid)
         })
         .toArray((err, files) => {
             if (err) return res.status(400).send(err);
@@ -162,9 +162,26 @@ app.get("/download/:filename", (req, res) => {
             const file = files[0];
             res.set('Content-Type', file.contentType);
             res.set('Content-Disposition', 'attachment;');
-
-            gfs.openDownloadStreamByName(req.params.filename).pipe(res)
+            console.log(file.filename)
+            gfs.openDownloadStreamByName(file.filename).pipe(res)
         });
+});
+
+app.get("/delete/:userid/:fileid", async (req, res) => {
+    try {
+        const file = await gfs
+            .delete(ObjectId(req.params.fileid));
+        await db.collection('users').updateOne({
+            '_id': ObjectId(req.params.userid)
+        }, {
+            $pull: {
+                files: ObjectId(req.params.fileid)
+            }
+        });
+    } catch (err) {
+        throw err;
+    }
+    res.redirect('back');
 });
 
 
